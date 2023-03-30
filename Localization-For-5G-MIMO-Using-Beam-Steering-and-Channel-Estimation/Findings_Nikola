@@ -1,0 +1,13 @@
+Findings about the python simulation: 
+
+1. Well structured and comprehensive PDF.
+2. They use only ULA (everythong is in a plane, rather than space).
+3. Combination of beem steering and chanel estimation.
+4. I finally think I understood what channel matrix and response vectors are.
+5. The implementation of Channel Estimation Localization is not working - even with no noise it is not barely acurate. 
+6. Ideas for further actions 
+  6.1 Try to debug the Channel Estimation Localization 
+  6.2 If 6.1 is successfull
+     6.2.1 Try to implement URL (cover the whole space instead of a plane)
+     6.2.3 Fully implement the solution with beam switching and determine if it adds accuracy
+      
