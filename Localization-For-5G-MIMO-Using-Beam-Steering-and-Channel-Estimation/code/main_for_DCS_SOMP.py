@@ -6,7 +6,6 @@
 import string
 import numpy as np
 import numpy.random
-import math
 import os
 from DCS_SOMP import modified_DCS_SOMP
 
@@ -24,7 +23,6 @@ G = 10       # number of beams sent
 c = 299.792458      # speed of light in meter/us
 Rs=10       # total BW in MHz
 Ts=1/Rs      # sampling period in us
-# posRx = np.array([3,3]).transpose() # relative position of Rx (assuming Tx is [0,0])
 alpha = 0.2  # UE orientation
 sigma=0#0.1    # noise standard deviation
 
@@ -44,24 +42,16 @@ def fiveG_positioning_experiement(posRx: np.ndarray, d: np.double, lambda_n: np.
   AOD[0] = np.arctan2(posRx[1], posRx[0])
   AOA[0] = np.arctan2(posRx[1], posRx[0])-np.pi-alpha
 
-  # print_debug("TOA[0] = {}".format(TOA[0]))
-  # print_debug("LOS path has parameters: TOA = {}, AOD = {}, AOA = {}".format(TOA[0], AOD[0], AOA[0]))
-
   # other indices except [0] are parameters for NLOS paths
   for i in range(1,L):
       i_s = i - 1 # index for SP, since len(SP) = len(TOA) - 1
       AOD[i] = np.arctan2(SP[i_s,1], SP[i_s,0])
       AOA[i] = np.arctan2(SP[i_s,1] - posRx[1], SP[i_s,0] - posRx[0]) - alpha
       TOA[i] = (norm_2(SP[i_s,:]) + norm_2(np.tile(np.expand_dims(posRx, 1), 1) - SP[i_s,:]) ) / c # simulating matlab where posRx is a column vector and is subtracted by the row vector SP[i_s,:]
-      # print_debug("SP[i_s,:] = {}, posRx - SP[i_s,:] = {}".format(SP[i_s,:], np.tile(np.expand_dims(posRx, 1), 1) - SP[i_s,:]))
-
-  # print_debug("NLOS paths have parameters: \nTOA[1:] = {}, \nAOD[1:] = {}, \nAOA[1:] = {}".format(TOA[1:], AOD[1:], AOA[1:]))
-
+     
   # there is two way to create 1-d array, first one is [1, L], second way is [L]
   # in fact, the first way typically is a 2d array with only one row
   h = 10 * np.ones([L])
-
-  # print_debug("h = {}".format(h))
 
   # create dictionary 
   Ut: np.ndarray = np.zeros([Nt, Nb], dtype="complex_")
@@ -71,13 +61,9 @@ def fiveG_positioning_experiement(posRx: np.ndarray, d: np.double, lambda_n: np.
   aa_old = np.arange(int(-Nb / 2), int(Nb / 2)) 
   aa = 2 * aa_old / Nb
 
-  # print_debug("aa_old = {}, aa = {}".format(aa_old, aa))
-
   for m in range(0, Nb):
     Ut[:, m] = get_response_vector(Nt, np.arcsin(aa[m]), d, lambda_n) * np.sqrt(Nt)
     Ur[:, m] = get_response_vector(Nr, np.arcsin(aa[m]), d, lambda_n) * np.sqrt(Nr)
-
-  # print_debug("Ut is {}, Ur is {}".format(Ut, Ur))
 
   # Generate channel H, eq. (1)-(5) from the paper 
   H = np.zeros([Nr, Nt, N], dtype="complex_")
@@ -88,8 +74,6 @@ def fiveG_positioning_experiement(posRx: np.ndarray, d: np.double, lambda_n: np.
       t3 = np.sqrt(Nt) * get_response_vector(Nt, AOD[l], d, lambda_n)
       H[:, :, n] += t1 * np.outer(t2, numpy.conjugate(t3))
 
-  # print_debug("H = {}".format(H))
-
   # generate observation and beamformers
   DIR_PATH = os.path.dirname(os.path.abspath(__file__))
   y =  np.zeros([Nr, G, N], dtype="complex_")
@@ -97,13 +81,13 @@ def fiveG_positioning_experiement(posRx: np.ndarray, d: np.double, lambda_n: np.
  
   # Deterministic values for y and F (the same as from Matlab)
   for n in range(0, N):
-    # y[:,:, N] = 
     yFilename = os.path.join(DIR_PATH, 'debug_export_data/exported_y_{}.csv'.format(n+1))
     y[:,:, n] = np.genfromtxt(yFilename, delimiter=",", dtype='complex_');
 
     FFilename = os.path.join(DIR_PATH, 'debug_export_data/exported_F_{}.csv'.format(n+1))
     F[:,:, n]  = np.genfromtxt(FFilename, delimiter=",", dtype='complex_');
    
+  # Non deterministic - values, not used due to debuging purposes. 
   # for g in range(0, G):
   #   for n in range(0, N):
   #     F[:, g, n] = np.exp(1j * np.random.rand(Nt, 1)[:,0] * 2 * np.pi) # random bean former
@@ -131,7 +115,6 @@ def fiveG_positioning_experiement(posRx: np.ndarray, d: np.double, lambda_n: np.
     distances[l] = distances[l] + N * Ts * c if (distances[l] < 0) else distances[l]
 
   min_i = np.argmin(distances)
-  min_val = distances[min_i]
 
   index1 = np.zeros([L], dtype=int)
   index2 = np.zeros([L], dtype=int)
